@@ -12,7 +12,15 @@ export default function Home() {
   useEffect(() => {
     fetch("/api/cars")
       .then(res => res.json())
-      .then(data => setFeaturedCars(data.slice(0, 3)));
+      .then(data => {
+        if (Array.isArray(data)) {
+          setFeaturedCars(data.slice(0, 3).map((c: any) => ({
+            ...c,
+            id: c._id
+          })));
+        }
+      })
+      .catch(err => console.error("Failed to fetch cars:", err));
   }, []);
 
   const trustIndicators = [

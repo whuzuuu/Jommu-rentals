@@ -10,22 +10,31 @@ const AdminLogin = () => {
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
 
-    // Hardcoded credentials for demo
-    if (password === "admin123") {
-      setTimeout(() => {
+    try {
+      const response = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
         localStorage.setItem("isAdminAuthenticated", "true");
+        localStorage.setItem("adminToken", data.token);
         navigate("/admin");
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setError("Invalid credentials. Please try again.");
-        setIsLoading(false);
-      }, 1000);
+      } else {
+        setError(data.message || "Invalid credentials. Please try again.");
+      }
+    } catch (err) {
+      setError("Failed to connect to server. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 

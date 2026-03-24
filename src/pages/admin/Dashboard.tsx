@@ -23,20 +23,27 @@ const Dashboard = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setStats({
-        totalCars: 42,
-        totalBookings: 128,
-        totalRevenue: 15400,
-        totalCustomers: 85,
-        bookingTrend: { value: 12, isUp: true },
-        revenueTrend: { value: 8, isUp: true },
-        customerTrend: { value: 5, isUp: true },
-        carTrend: { value: 2, isUp: true },
-      });
-      setIsLoading(false);
-    }, 1000);
+    const fetchStats = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        const response = await fetch("/api/admin/stats", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setStats({
+            ...data,
+            ...data.trends
+          });
+        }
+      } catch (error) {
+        console.error("Failed to fetch stats:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchStats();
   }, []);
 
   const chartData = [
@@ -74,30 +81,30 @@ const Dashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             <StatCard 
               title="Total Cars" 
-              value={stats.totalCars} 
+              value={stats?.totalCars || 0} 
               icon={Car} 
-              trend={stats.carTrend}
+              trend={stats?.carTrend || "+0%"}
               color="blue"
             />
             <StatCard 
               title="Total Bookings" 
-              value={stats.totalBookings} 
+              value={stats?.totalBookings || 0} 
               icon={CalendarCheck} 
-              trend={stats.bookingTrend}
+              trend={stats?.bookingTrend || "+0%"}
               color="orange"
             />
             <StatCard 
               title="Total Revenue" 
-              value={`$${stats.totalRevenue.toLocaleString()}`} 
+              value={`$${(stats?.totalRevenue || 0).toLocaleString()}`} 
               icon={DollarSign} 
-              trend={stats.revenueTrend}
+              trend={stats?.revenueTrend || "+0%"}
               color="green"
             />
             <StatCard 
               title="Total Customers" 
-              value={stats.totalCustomers} 
+              value={stats?.totalCustomers || 0} 
               icon={Users} 
-              trend={stats.customerTrend}
+              trend={stats?.customerTrend || "+0%"}
               color="purple"
             />
           </div>

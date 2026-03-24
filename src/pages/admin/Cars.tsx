@@ -18,19 +18,62 @@ import { motion } from "motion/react";
 const Cars = () => {
   const [cars, setCars] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [newCar, setNewCar] = useState({
+    name: "",
+    type: "SUV",
+    price: "",
+    imageUrl: "",
+    description: "",
+    features: ""
+  });
+
+  const handleAddCar = async (e: any) => {
+    e.preventDefault();
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch("/api/cars", {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          ...newCar,
+          price: Number(newCar.price),
+          features: newCar.features.split(",").map(f => f.trim())
+        })
+      });
+      if (response.ok) {
+        const addedCar = await response.json();
+        setCars([...cars, { ...addedCar, id: addedCar._id }]);
+        setIsModalOpen(false);
+        setNewCar({ name: "", type: "SUV", price: "", imageUrl: "", description: "", features: "" });
+      }
+    } catch (error) {
+      console.error("Failed to add car:", error);
+    }
+  };
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setCars([
-        { id: 1, name: "Toyota Prado", price: 150, type: "SUV", imageUrl: "https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&q=80&w=800" },
-        { id: 2, name: "Range Rover Sport", price: 250, type: "Luxury", imageUrl: "https://images.unsplash.com/photo-1606611013016-969c19ba27bb?auto=format&fit=crop&q=80&w=800" },
-        { id: 3, name: "Mercedes S-Class", price: 300, type: "Luxury", imageUrl: "https://images.unsplash.com/photo-1618843479313-40f8afb4b4d8?auto=format&fit=crop&q=80&w=800" },
-        { id: 4, name: "Land Cruiser V8", price: 200, type: "SUV", imageUrl: "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=800" },
-        { id: 5, name: "BMW X5", price: 180, type: "SUV", imageUrl: "https://images.unsplash.com/photo-1555215695-3004980ad54e?auto=format&fit=crop&q=80&w=800" },
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    const fetchCars = async () => {
+      try {
+        const response = await fetch("/api/cars");
+        const data = await response.json();
+        if (response.ok) {
+          setCars(data.map((c: any) => ({
+            ...c,
+            id: c._id
+          })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch cars:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchCars();
   }, []);
 
   return (
@@ -56,7 +99,10 @@ const Cars = () => {
               </button>
             </div>
             
-            <button className="flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20 group w-full md:w-auto justify-center">
+            <button 
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20 group w-full md:w-auto justify-center"
+            >
               <Plus className="w-5 h-5 group-hover:rotate-90 transition-transform" />
               Add New Car
             </button>
@@ -135,6 +181,113 @@ const Cars = () => {
             </div>
           </div>
         </main>
+
+        {/* Add Car Modal */}
+        {isModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden"
+            >
+              <div className="p-8 border-b border-gray-100 flex justify-between items-center">
+                <h2 className="text-2xl font-bold text-gray-900">Add New Vehicle</h2>
+                <button onClick={() => setIsModalOpen(false)} className="text-gray-400 hover:text-gray-900 transition-colors">
+                  <Plus className="w-6 h-6 rotate-45" />
+                </button>
+              </div>
+              
+              <form onSubmit={handleAddCar} className="p-8 space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Car Name</label>
+                    <input 
+                      type="text" 
+                      required
+                      value={newCar.name}
+                      onChange={(e) => setNewCar({ ...newCar, name: e.target.value })}
+                      placeholder="e.g. Toyota Prado"
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vehicle Type</label>
+                    <select 
+                      value={newCar.type}
+                      onChange={(e) => setNewCar({ ...newCar, type: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    >
+                      <option value="SUV">SUV</option>
+                      <option value="Luxury">Luxury</option>
+                      <option value="Sedan">Sedan</option>
+                      <option value="Van">Van</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Price per Day ($)</label>
+                    <input 
+                      type="number" 
+                      required
+                      value={newCar.price}
+                      onChange={(e) => setNewCar({ ...newCar, price: e.target.value })}
+                      placeholder="e.g. 150"
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Image URL</label>
+                    <input 
+                      type="url" 
+                      required
+                      value={newCar.imageUrl}
+                      onChange={(e) => setNewCar({ ...newCar, imageUrl: e.target.value })}
+                      placeholder="https://..."
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Features (comma separated)</label>
+                  <input 
+                    type="text" 
+                    value={newCar.features}
+                    onChange={(e) => setNewCar({ ...newCar, features: e.target.value })}
+                    placeholder="e.g. Automatic, AC, 4x4, GPS"
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Description</label>
+                  <textarea 
+                    rows={3}
+                    value={newCar.description}
+                    onChange={(e) => setNewCar({ ...newCar, description: e.target.value })}
+                    placeholder="Brief description of the vehicle..."
+                    className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium resize-none"
+                  ></textarea>
+                </div>
+
+                <div className="flex gap-4 pt-4">
+                  <button 
+                    type="button"
+                    onClick={() => setIsModalOpen(false)}
+                    className="flex-1 py-4 bg-gray-100 hover:bg-gray-200 text-gray-900 font-bold rounded-2xl transition-all"
+                  >
+                    Cancel
+                  </button>
+                  <button 
+                    type="submit"
+                    className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20"
+                  >
+                    Save Vehicle
+                  </button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
       </div>
     </div>
   );

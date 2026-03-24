@@ -20,19 +20,51 @@ const Bookings = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setBookings([
-        { id: 1, customer: "John Doe", car: "Toyota Prado", pickupDate: "2024-03-25", returnDate: "2024-03-30", status: "Pending" },
-        { id: 2, customer: "Sarah Smith", car: "Range Rover Sport", pickupDate: "2024-03-26", returnDate: "2024-04-02", status: "Approved" },
-        { id: 3, customer: "Michael Brown", car: "Mercedes S-Class", pickupDate: "2024-03-28", returnDate: "2024-03-31", status: "Completed" },
-        { id: 4, customer: "Emily Davis", car: "Land Cruiser V8", pickupDate: "2024-03-30", returnDate: "2024-04-05", status: "Cancelled" },
-        { id: 5, customer: "David Wilson", car: "BMW X5", pickupDate: "2024-04-01", returnDate: "2024-04-10", status: "Pending" },
-      ]);
-      setIsLoading(false);
-    }, 1000);
+    const fetchBookings = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        const response = await fetch("/api/bookings", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setBookings(data.map((b: any) => ({
+            id: b._id,
+            customer: b.customerId?.name || "Unknown",
+            car: b.carId?.name || "Unknown",
+            pickupDate: new Date(b.pickupDate).toLocaleDateString(),
+            returnDate: new Date(b.returnDate).toLocaleDateString(),
+            status: b.status.charAt(0).toUpperCase() + b.status.slice(1)
+          })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch bookings:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchBookings();
   }, []);
 
+  const updateBookingStatus = async (id: string, status: string) => {
+    try {
+      const token = localStorage.getItem("adminToken");
+      const response = await fetch(`/api/bookings/${id}`, {
+        method: "PUT",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify({ status: status.toLowerCase() })
+      });
+      if (response.ok) {
+        setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
+      }
+    } catch (error) {
+      console.error("Failed to update booking:", error);
+    }
+  };
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Pending": return "bg-orange-50 text-orange-600 border-orange-100";
@@ -135,10 +167,18 @@ const Bookings = () => {
                           <div className="flex items-center justify-end gap-2">
                             {booking.status === "Pending" && (
                               <>
-                                <button className="p-2 text-green-500 hover:bg-green-50 rounded-xl transition-all" title="Approve">
+                                <button 
+                                  onClick={() => updateBookingStatus(booking.id, "Approved")}
+                                  className="p-2 text-green-500 hover:bg-green-50 rounded-xl transition-all" 
+                                  title="Approve"
+                                >
                                   <CheckCircle2 className="w-5 h-5" />
                                 </button>
-                                <button className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Cancel">
+                                <button 
+                                  onClick={() => updateBookingStatus(booking.id, "Cancelled")}
+                                  className="p-2 text-red-500 hover:bg-red-50 rounded-xl transition-all" 
+                                  title="Cancel"
+                                >
                                   <XCircle className="w-5 h-5" />
                                 </button>
                               </>

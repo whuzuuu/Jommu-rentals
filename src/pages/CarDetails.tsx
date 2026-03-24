@@ -22,7 +22,8 @@ export default function CarDetails() {
     fetch(`/api/cars/${id}`)
       .then(res => res.json())
       .then(data => {
-        setCar(data);
+        const formattedCar = { ...data, id: data._id };
+        setCar(formattedCar);
         setActiveImage(data.imageUrl);
         setLoading(false);
       })

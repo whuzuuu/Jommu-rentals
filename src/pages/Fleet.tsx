@@ -14,9 +14,16 @@ export default function Fleet() {
     fetch("/api/cars")
       .then(res => res.json())
       .then(data => {
-        setCars(data);
-        setFilteredCars(data);
-      });
+        if (Array.isArray(data)) {
+          const formattedData = data.map((c: any) => ({
+            ...c,
+            id: c._id
+          }));
+          setCars(formattedData);
+          setFilteredCars(formattedData);
+        }
+      })
+      .catch(err => console.error("Failed to fetch cars:", err));
   }, []);
 
   useEffect(() => {

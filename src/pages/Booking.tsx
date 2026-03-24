@@ -51,18 +51,32 @@ export default function Booking() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          carId: car?.id,
-          carName: car?.name,
-          ...formData
+          customer: {
+            name: formData.fullName,
+            email: formData.email,
+            phone: formData.phone
+          },
+          booking: {
+            carId: car?.id,
+            pickupDate: formData.pickupDate,
+            returnDate: formData.returnDate,
+            totalPrice: car?.price, // This should be calculated based on dates
+            paymentMethod: formData.paymentMethod,
+            mpesaPhone: formData.paymentDetails.mpesaPhone
+          }
         })
       });
 
       if (response.ok) {
         setSuccess(true);
         setTimeout(() => navigate("/"), 5000);
+      } else {
+        const errorData = await response.json();
+        alert(errorData.message || "Booking failed. Please try again.");
       }
     } catch (error) {
       console.error("Booking failed:", error);
+      alert("An error occurred. Please try again.");
     } finally {
       setSubmitting(false);
     }

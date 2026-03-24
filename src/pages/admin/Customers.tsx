@@ -19,21 +19,29 @@ const Customers = () => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate API fetch
-    setTimeout(() => {
-      setBookings([
-        { id: 1, name: "John Doe", email: "john@example.com", phone: "+254 712 345 678", totalBookings: 5, status: "Active" },
-        { id: 2, name: "Sarah Smith", email: "sarah@example.com", phone: "+254 723 456 789", totalBookings: 3, status: "Active" },
-        { id: 3, name: "Michael Brown", email: "michael@example.com", phone: "+254 734 567 890", totalBookings: 8, status: "VIP" },
-        { id: 4, name: "Emily Davis", email: "emily@example.com", phone: "+254 745 678 901", totalBookings: 1, status: "Active" },
-        { id: 5, name: "David Wilson", email: "david@example.com", phone: "+254 756 789 012", totalBookings: 12, status: "VIP" },
-      ]);
-      setIsLoading(false);
-    }, 1000);
-  }, []);
+    const fetchCustomers = async () => {
+      try {
+        const token = localStorage.getItem("adminToken");
+        const response = await fetch("/api/customers", {
+          headers: { "Authorization": `Bearer ${token}` }
+        });
+        const data = await response.json();
+        if (response.ok) {
+          setCustomers(data.map((c: any) => ({
+            ...c,
+            id: c._id,
+            status: c.totalBookings > 5 ? "VIP" : "Active"
+          })));
+        }
+      } catch (error) {
+        console.error("Failed to fetch customers:", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
 
-  // Fix: I accidentally used setBookings instead of setCustomers in the mock fetch
-  const setBookings = (data: any[]) => setCustomers(data);
+    fetchCustomers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
