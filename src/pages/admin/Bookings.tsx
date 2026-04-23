@@ -14,53 +14,42 @@ import {
 import Sidebar from "@/src/components/admin/Sidebar";
 import Topbar from "@/src/components/admin/Topbar";
 import { cn } from "@/src/lib/utils";
+import { subscribeToBookings, updateBookingStatus as updateStatus } from "@/src/services/firebaseService";
 
 const Bookings = () => {
   const [bookings, setBookings] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
 
   useEffect(() => {
-    const fetchBookings = async () => {
-      try {
-        const token = localStorage.getItem("adminToken");
-        const response = await fetch("/api/bookings", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setBookings(data.map((b: any) => ({
-            id: b._id,
-            customer: b.customerId?.name || "Unknown",
-            car: b.carId?.name || "Unknown",
-            pickupDate: new Date(b.pickupDate).toLocaleDateString(),
-            returnDate: new Date(b.returnDate).toLocaleDateString(),
-            status: b.status.charAt(0).toUpperCase() + b.status.slice(1)
-          })));
-        }
-      } catch (error) {
-        console.error("Failed to fetch bookings:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchBookings();
+    const unsubscribe = subscribeToBookings((data) => {
+      setBookings(data.map((b: any) => ({
+        id: b.id,
+        customer: b.customerName || "Unknown",
+        car: b.carName || "Unknown",
+        pickupDate: b.pickupDate,
+        returnDate: b.returnDate,
+        status: b.status.charAt(0).toUpperCase() + b.status.slice(1)
+      })));
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
+
+  const filteredBookings = bookings.filter(booking => {
+    const matchesSearch = booking.customer.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         booking.car.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         booking.id.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterStatus === "All" || booking.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
+  const statuses = ["All", "Pending", "Approved", "Cancelled", "Completed"];
 
   const updateBookingStatus = async (id: string, status: string) => {
     try {
-      const token = localStorage.getItem("adminToken");
-      const response = await fetch(`/api/bookings/${id}`, {
-        method: "PUT",
-        headers: { 
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
-        },
-        body: JSON.stringify({ status: status.toLowerCase() })
-      });
-      if (response.ok) {
-        setBookings(bookings.map(b => b.id === id ? { ...b, status } : b));
-      }
+      await updateStatus(id, status.toLowerCase() as any);
     } catch (error) {
       console.error("Failed to update booking:", error);
     }
@@ -90,12 +79,23 @@ const Bookings = () => {
                 <input 
                   type="text" 
                   placeholder="Search bookings..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all"
                 />
               </div>
-              <button className="p-3 bg-gray-50 text-gray-500 hover:bg-gray-100 rounded-2xl transition-all">
-                <Filter className="w-5 h-5" />
-              </button>
+              <div className="relative">
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="pl-4 pr-10 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all appearance-none cursor-pointer"
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+                <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
             
             <div className="flex gap-2">
@@ -129,7 +129,7 @@ const Bookings = () => {
                       </tr>
                     ))
                   ) : (
-                    bookings.map((booking) => (
+                    filteredBookings.map((booking) => (
                       <tr key={booking.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-3">

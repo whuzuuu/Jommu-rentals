@@ -4,18 +4,26 @@ import {
   Car, 
   CalendarCheck, 
   Users, 
+  User,
   LogOut,
   ChevronRight
 } from "lucide-react";
 import { cn } from "@/src/lib/utils";
+import { signOut } from "firebase/auth";
+import { auth } from "@/src/firebase";
 
 const Sidebar = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAdminAuthenticated");
-    navigate("/admin/login");
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem("isAdminAuthenticated");
+      navigate("/admin/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   const menuItems = [
@@ -23,6 +31,7 @@ const Sidebar = () => {
     { name: "Cars", path: "/admin/cars", icon: Car },
     { name: "Bookings", path: "/admin/bookings", icon: CalendarCheck },
     { name: "Customers", path: "/admin/customers", icon: Users },
+    { name: "Profile", path: "/admin/profile", icon: User },
   ];
 
   return (

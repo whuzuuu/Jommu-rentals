@@ -13,35 +13,34 @@ import {
 } from "lucide-react";
 import Sidebar from "@/src/components/admin/Sidebar";
 import Topbar from "@/src/components/admin/Topbar";
+import { subscribeToCustomers } from "@/src/services/firebaseService";
 
 const Customers = () => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterStatus, setFilterStatus] = useState("All");
 
   useEffect(() => {
-    const fetchCustomers = async () => {
-      try {
-        const token = localStorage.getItem("adminToken");
-        const response = await fetch("/api/customers", {
-          headers: { "Authorization": `Bearer ${token}` }
-        });
-        const data = await response.json();
-        if (response.ok) {
-          setCustomers(data.map((c: any) => ({
-            ...c,
-            id: c._id,
-            status: c.totalBookings > 5 ? "VIP" : "Active"
-          })));
-        }
-      } catch (error) {
-        console.error("Failed to fetch customers:", error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchCustomers();
+    const unsubscribe = subscribeToCustomers((data) => {
+      setCustomers(data.map((c: any) => ({
+        ...c,
+        status: (c.totalBookings || 0) > 5 ? "VIP" : "Active"
+      })));
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
   }, []);
+
+  const filteredCustomers = customers.filter(customer => {
+    const matchesSearch = customer.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+                         customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         customer.phone.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesFilter = filterStatus === "All" || customer.status === filterStatus;
+    return matchesSearch && matchesFilter;
+  });
+
+  const statuses = ["All", "Active", "VIP"];
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
@@ -58,15 +57,29 @@ const Customers = () => {
                 <input 
                   type="text" 
                   placeholder="Search customers..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-11 pr-4 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all"
                 />
               </div>
-              <button className="p-3 bg-gray-50 text-gray-500 hover:bg-gray-100 rounded-2xl transition-all">
-                <Filter className="w-5 h-5" />
-              </button>
+              <div className="relative">
+                <select 
+                  value={filterStatus}
+                  onChange={(e) => setFilterStatus(e.target.value)}
+                  className="pl-4 pr-10 py-3 bg-gray-50 border-none rounded-2xl text-sm font-medium focus:ring-2 focus:ring-orange-500 transition-all appearance-none cursor-pointer"
+                >
+                  {statuses.map(status => (
+                    <option key={status} value={status}>{status}</option>
+                  ))}
+                </select>
+                <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
+              </div>
             </div>
             
-            <button className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl transition-all shadow-lg shadow-gray-900/20 flex items-center gap-2">
+            <button 
+              onClick={() => alert("Newsletter feature coming soon! This will send an email to all active customers.")}
+              className="px-6 py-3 bg-gray-900 hover:bg-black text-white font-bold rounded-2xl transition-all shadow-lg shadow-gray-900/20 flex items-center gap-2"
+            >
               <Mail className="w-4 h-4" />
               Send Newsletter
             </button>
@@ -97,7 +110,7 @@ const Customers = () => {
                       </tr>
                     ))
                   ) : (
-                    customers.map((customer) => (
+                    filteredCustomers.map((customer) => (
                       <tr key={customer.id} className="hover:bg-gray-50/50 transition-colors group">
                         <td className="px-8 py-6">
                           <div className="flex items-center gap-3">

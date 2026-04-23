@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { CheckCircle, Car as CarIcon, Calendar, User, Mail, Phone, FileText, Loader2, CreditCard, Smartphone, Lock } from "lucide-react";
 import { Car } from "@/src/types";
+import { getCarById, createBooking, getCustomerByEmail, createCustomer } from "@/src/services/firebaseService";
 
 export default function Booking() {
   const [searchParams] = useSearchParams();
@@ -30,10 +31,11 @@ export default function Booking() {
   useEffect(() => {
     const carId = searchParams.get("carId");
     if (carId) {
-      fetch(`/api/cars/${carId}`)
-        .then(res => res.json())
+      getCarById(carId)
         .then(data => {
-          setCar(data);
+          if (data) {
+            setCar(data as any);
+          }
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -47,33 +49,38 @@ export default function Booking() {
     setSubmitting(true);
 
     try {
-      const response = await fetch("/api/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          customer: {
-            name: formData.fullName,
-            email: formData.email,
-            phone: formData.phone
-          },
-          booking: {
-            carId: car?.id,
-            pickupDate: formData.pickupDate,
-            returnDate: formData.returnDate,
-            totalPrice: car?.price, // This should be calculated based on dates
-            paymentMethod: formData.paymentMethod,
-            mpesaPhone: formData.paymentDetails.mpesaPhone
-          }
-        })
-      });
-
-      if (response.ok) {
-        setSuccess(true);
-        setTimeout(() => navigate("/"), 5000);
+      // 1. Ensure customer exists
+      let customerId = "";
+      const existingCustomer = await getCustomerByEmail(formData.email);
+      
+      if (existingCustomer) {
+        customerId = existingCustomer.id;
       } else {
-        const errorData = await response.json();
-        alert(errorData.message || "Booking failed. Please try again.");
+        customerId = await createCustomer({
+          name: formData.fullName,
+          email: formData.email,
+          phone: formData.phone
+        }) || "";
       }
+
+      // 2. Create booking
+      const bookingData = {
+        customerId,
+        carId: car?.id || "",
+        carName: car?.name || "",
+        pickupDate: new Date(formData.pickupDate),
+        returnDate: new Date(formData.returnDate),
+        totalPrice: car?.price || 0,
+        status: "pending" as const,
+        paymentStatus: "unpaid" as const,
+        paymentMethod: formData.paymentMethod,
+        mpesaPhone: formData.paymentDetails.mpesaPhone,
+        notes: formData.notes
+      };
+
+      await createBooking(bookingData);
+      setSuccess(true);
+      setTimeout(() => navigate("/"), 5000);
     } catch (error) {
       console.error("Booking failed:", error);
       alert("An error occurred. Please try again.");
@@ -94,7 +101,7 @@ export default function Booking() {
           <div className="space-y-4">
             <h2 className="text-3xl font-bold text-gray-900">Booking Confirmed!</h2>
             <p className="text-gray-500 leading-relaxed">
-              Thank you for choosing Jommu Safaris. We've received your booking for the <strong>{car?.name}</strong>. Our team will contact you shortly to finalize the details.
+              Thank you for choosing Jommu Rentals. We've received your booking for the <strong>{car?.name}</strong>. Our team will contact you shortly to finalize the details.
             </p>
           </div>
           <button
@@ -338,7 +345,7 @@ export default function Booking() {
                     Processing Payment...
                   </>
                 ) : (
-                  `Pay $${car?.price} & Confirm Booking`
+                  `Pay KSh ${car?.price} & Confirm Booking`
                 )}
               </button>
             </form>
@@ -360,7 +367,7 @@ export default function Booking() {
                   </div>
                   <div className="pt-6 border-t border-gray-100 flex justify-between items-center">
                     <span className="text-gray-500 font-medium">Daily Rate</span>
-                    <span className="text-xl font-bold text-gray-900">${car.price}</span>
+                    <span className="text-xl font-bold text-gray-900">KSh {car.price}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-gray-500 font-medium">Insurance</span>
@@ -368,7 +375,7 @@ export default function Booking() {
                   </div>
                   <div className="pt-6 border-t border-gray-100 flex justify-between items-center">
                     <span className="text-lg font-bold text-gray-900">Total</span>
-                    <span className="text-2xl font-black text-orange-500">${car.price}*</span>
+                    <span className="text-2xl font-black text-orange-500">KSh {car.price}*</span>
                   </div>
                   <p className="text-[10px] text-gray-400 italic">* Final price calculated based on duration and optional extras.</p>
                 </div>

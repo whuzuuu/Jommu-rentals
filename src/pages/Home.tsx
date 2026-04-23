@@ -5,22 +5,16 @@ import { motion } from "motion/react";
 import SearchBox from "@/src/components/SearchBox";
 import CarCard from "@/src/components/CarCard";
 import { Car } from "@/src/types";
+import { subscribeToCars } from "@/src/services/firebaseService";
 
 export default function Home() {
   const [featuredCars, setFeaturedCars] = useState<Car[]>([]);
 
   useEffect(() => {
-    fetch("/api/cars")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setFeaturedCars(data.slice(0, 3).map((c: any) => ({
-            ...c,
-            id: c._id
-          })));
-        }
-      })
-      .catch(err => console.error("Failed to fetch cars:", err));
+    const unsubscribe = subscribeToCars((cars) => {
+      setFeaturedCars(cars.slice(0, 3));
+    });
+    return () => unsubscribe();
   }, []);
 
   const trustIndicators = [
@@ -72,8 +66,8 @@ export default function Home() {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://images.unsplash.com/photo-1594502184342-2e12f877aa73?auto=format&fit=crop&q=80&w=1920"
-            alt="Luxury SUV"
+            src="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1081007964226557"
+            alt="Lion in Nairobi National Park"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />
@@ -93,7 +87,7 @@ export default function Home() {
               <span className="text-orange-500">in Nairobi</span>
             </h1>
             <p className="text-xl md:text-2xl text-white/90 font-medium max-w-2xl mx-auto">
-              Reliable. Affordable. Luxury. Experience the best of Kenya with Jommu Safaris.
+              Reliable. Affordable. Luxury. Experience the best of Kenya with Jommu Rentals.
             </p>
             
             {/* Search Box */}

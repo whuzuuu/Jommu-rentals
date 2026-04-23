@@ -37,7 +37,7 @@ export default function Navbar() {
           <Link to="/" className="flex items-center gap-2">
             <img 
               src="/logo.png" 
-              alt="Jommu Safaris" 
+              alt="Jommu Rentals" 
               className="h-12 w-auto object-contain"
               referrerPolicy="no-referrer"
               onError={(e) => {
@@ -54,7 +54,7 @@ export default function Navbar() {
                 "text-xl font-bold tracking-tight",
                 isScrolled ? "text-gray-900" : "text-white"
               )}>
-                Jommu <span className="text-orange-500">Safaris</span>
+                Jommu <span className="text-orange-500">Rentals</span>
               </span>
             </div>
           </Link>

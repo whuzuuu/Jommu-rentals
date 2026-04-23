@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Search, Filter, ChevronDown } from "lucide-react";
 import CarCard from "@/src/components/CarCard";
 import { Car } from "@/src/types";
+import { subscribeToCars } from "@/src/services/firebaseService";
 
 export default function Fleet() {
   const [cars, setCars] = useState<Car[]>([]);
@@ -11,19 +12,11 @@ export default function Fleet() {
   const [sortBy, setSortBy] = useState("Recommended");
 
   useEffect(() => {
-    fetch("/api/cars")
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          const formattedData = data.map((c: any) => ({
-            ...c,
-            id: c._id
-          }));
-          setCars(formattedData);
-          setFilteredCars(formattedData);
-        }
-      })
-      .catch(err => console.error("Failed to fetch cars:", err));
+    const unsubscribe = subscribeToCars((data) => {
+      setCars(data);
+      setFilteredCars(data);
+    });
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {

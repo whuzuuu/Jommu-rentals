@@ -11,7 +11,7 @@ export default function Footer() {
             <Link to="/" className="flex items-center gap-2">
               <img 
                 src="/logo.png" 
-                alt="Jommu Safaris" 
+                alt="Jommu Rentals" 
                 className="h-10 w-auto object-contain brightness-0 invert"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
@@ -24,7 +24,7 @@ export default function Footer() {
                   <Car className="text-white w-6 h-6" />
                 </div>
                 <span className="text-xl font-bold tracking-tight">
-                  Jommu <span className="text-orange-500">Safaris</span>
+                  Jommu <span className="text-orange-500">Rentals</span>
                 </span>
               </div>
             </Link>
@@ -97,7 +97,7 @@ export default function Footer() {
         </div>
 
         <div className="border-t border-gray-800 pt-8 flex flex-col md:row justify-between items-center gap-4 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} Jommu Safaris. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} Jommu Rentals. All rights reserved.</p>
           <div className="flex gap-8">
             <a href="#" className="hover:text-white transition-colors">Privacy Policy</a>
             <a href="#" className="hover:text-white transition-colors">Terms of Service</a>

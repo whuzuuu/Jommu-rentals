@@ -16,6 +16,7 @@ const Topbar = ({ title }: { title: string }) => {
 
   const handleLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
+    localStorage.removeItem("adminToken");
     navigate("/admin/login");
   };
 
@@ -59,9 +60,15 @@ const Topbar = ({ title }: { title: string }) => {
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="px-4 py-3 border-b border-gray-50 mb-2">
                 <p className="text-sm font-bold text-gray-900">Admin User</p>
-                <p className="text-xs font-medium text-gray-500">admin@jommusafaris.com</p>
+                <p className="text-xs font-medium text-gray-500">admin@jommurentals.com</p>
               </div>
-              <button className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-all">
+              <button 
+                onClick={() => {
+                  setIsProfileOpen(false);
+                  navigate("/admin/profile");
+                }}
+                className="flex items-center gap-3 w-full px-4 py-2.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-xl transition-all"
+              >
                 <User className="w-4 h-4" />
                 Profile
               </button>

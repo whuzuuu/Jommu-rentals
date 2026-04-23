@@ -6,9 +6,12 @@ import { motion } from "motion/react";
 
 interface CarCardProps {
   car: Car;
+  isAdmin?: boolean;
+  onEdit?: (car: Car) => void;
+  onDelete?: (id: string) => void;
 }
 
-const CarCard: React.FC<CarCardProps> = ({ car }) => {
+const CarCard: React.FC<CarCardProps> = ({ car, isAdmin, onEdit, onDelete }) => {
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -36,7 +39,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
         <div className="flex justify-between items-start mb-4">
           <h3 className="text-xl font-bold text-gray-900">{car.name}</h3>
           <div className="text-right">
-            <span className="text-2xl font-bold text-orange-500">${car.price}</span>
+            <span className="text-2xl font-bold text-orange-500">KSh {car.price}</span>
             <span className="text-gray-500 text-sm block">/day</span>
           </div>
         </div>
@@ -59,19 +62,38 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
 
         {/* Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <Link
-            to={`/car/${car.id}`}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
-          >
-            Details
-          </Link>
-          <Link
-            to={`/booking?carId=${car.id}`}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
-          >
-            Book Now
-            <ArrowRight className="w-4 h-4" />
-          </Link>
+          {isAdmin ? (
+            <>
+              <button
+                onClick={() => onEdit?.(car)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete?.(car.id)}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-red-500 hover:bg-red-600 transition-colors shadow-lg shadow-red-200"
+              >
+                Delete
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                to={`/car/${car.id}`}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Details
+              </Link>
+              <Link
+                to={`/booking?carId=${car.id}`}
+                className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-colors shadow-lg shadow-orange-200"
+              >
+                Book Now
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </motion.div>

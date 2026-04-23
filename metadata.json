@@ -1,5 +1,6 @@
 {
-  "name": "Jommu Safaris",
+  "name": "Jommu Rentals",
   "description": "Premium Car Rentals in Nairobi. Reliable, Affordable, Luxury.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [],
+  "majorCapabilities": []
 }

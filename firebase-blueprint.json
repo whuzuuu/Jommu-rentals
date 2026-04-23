@@ -1,0 +1,76 @@
+{
+  "entities": {
+    "Car": {
+      "title": "Car",
+      "description": "A vehicle available for rental",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "The name of the car" },
+        "price": { "type": "number", "description": "Daily rental price" },
+        "type": { "type": "string", "description": "Category of the car (e.g., SUV, Luxury)" },
+        "imageUrl": { "type": "string", "format": "uri", "description": "Main image of the car" },
+        "transmission": { "type": "string", "enum": ["Automatic", "Manual"], "description": "Transmission type" },
+        "fuelType": { "type": "string", "enum": ["Petrol", "Diesel", "Electric", "Hybrid"], "description": "Fuel type" },
+        "seats": { "type": "integer", "description": "Number of seats" },
+        "available": { "type": "boolean", "description": "Whether the car is currently available" },
+        "description": { "type": "string", "description": "A detailed description of the car" },
+        "features": { "type": "array", "items": { "type": "string" }, "description": "A list of features for the car" }
+      },
+      "required": ["name", "price", "type", "imageUrl"]
+    },
+    "Customer": {
+      "title": "Customer",
+      "description": "A person who rents cars",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name" },
+        "email": { "type": "string", "format": "email", "description": "Email address" },
+        "phone": { "type": "string", "description": "Phone number" }
+      },
+      "required": ["name", "email", "phone"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A car rental reservation",
+      "type": "object",
+      "properties": {
+        "customerId": { "type": "string", "description": "Reference to the customer" },
+        "carId": { "type": "string", "description": "Reference to the car" },
+        "pickupDate": { "type": "string", "format": "date-time", "description": "Start of rental" },
+        "returnDate": { "type": "string", "format": "date-time", "description": "End of rental" },
+        "totalPrice": { "type": "number", "description": "Total cost of the booking" },
+        "status": { "type": "string", "enum": ["pending", "approved", "cancelled", "completed"], "description": "Booking status" },
+        "paymentStatus": { "type": "string", "enum": ["unpaid", "paid"], "description": "Payment status" }
+      },
+      "required": ["customerId", "carId", "pickupDate", "returnDate", "totalPrice"]
+    },
+    "User": {
+      "title": "User",
+      "description": "Application user profile",
+      "type": "object",
+      "properties": {
+        "email": { "type": "string", "format": "email" },
+        "role": { "type": "string", "enum": ["admin", "client"] }
+      },
+      "required": ["email", "role"]
+    }
+  },
+  "firestore": {
+    "/cars/{carId}": {
+      "schema": "Car",
+      "description": "Collection of available cars"
+    },
+    "/customers/{customerId}": {
+      "schema": "Customer",
+      "description": "Collection of customer details"
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "Collection of car rental bookings"
+    },
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles and roles"
+    }
+  }
+}

@@ -2,6 +2,7 @@ import { useState, useEffect, FormEvent } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { Users, Gauge, Fuel, CheckCircle2, ArrowLeft, Calendar, Phone, User } from "lucide-react";
 import { Car } from "@/src/types";
+import { getCarById } from "@/src/services/firebaseService";
 
 export default function CarDetails() {
   const { id } = useParams();
@@ -19,12 +20,13 @@ export default function CarDetails() {
   });
 
   useEffect(() => {
-    fetch(`/api/cars/${id}`)
-      .then(res => res.json())
-      .then(data => {
-        const formattedCar = { ...data, id: data._id };
-        setCar(formattedCar);
-        setActiveImage(data.imageUrl);
+    if (!id) return;
+    getCarById(id)
+      .then((data: any) => {
+        if (data) {
+          setCar(data as Car);
+          setActiveImage(data.imageUrl);
+        }
         setLoading(false);
       })
       .catch(() => setLoading(false));
@@ -83,7 +85,7 @@ export default function CarDetails() {
                   <h1 className="text-4xl font-extrabold text-gray-900">{car.name}</h1>
                 </div>
                 <div className="text-left md:text-right">
-                  <span className="text-4xl font-black text-orange-500">${car.price}</span>
+                  <span className="text-4xl font-black text-orange-500">KSh {car.price}</span>
                   <span className="text-gray-500 font-bold text-lg"> / day</span>
                 </div>
               </div>

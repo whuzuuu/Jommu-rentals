@@ -2,6 +2,8 @@ import { useState, FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import { Lock, Mail, ArrowRight, Car, ShieldCheck } from "lucide-react";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/src/firebase";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -16,23 +18,12 @@ const AdminLogin = () => {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        localStorage.setItem("isAdminAuthenticated", "true");
-        localStorage.setItem("adminToken", data.token);
-        navigate("/admin");
-      } else {
-        setError(data.message || "Invalid credentials. Please try again.");
-      }
-    } catch (err) {
-      setError("Failed to connect to server. Please try again.");
+      await signInWithEmailAndPassword(auth, email, password);
+      localStorage.setItem("isAdminAuthenticated", "true");
+      navigate("/admin");
+    } catch (err: any) {
+      console.error("Login error:", err);
+      setError(err.message || "Invalid credentials. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -55,7 +46,7 @@ const AdminLogin = () => {
             <ShieldCheck className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-3xl font-extrabold text-white tracking-tight mb-2">Admin Portal</h2>
-          <p className="text-gray-400 font-medium">Secure access to Jommu Safaris</p>
+          <p className="text-gray-400 font-medium">Secure access to Jommu Rentals</p>
         </div>
 
         <form onSubmit={handleLogin} className="space-y-6">

@@ -30,7 +30,7 @@ export default function Login() {
           <div className="flex justify-center mb-6">
             <img 
               src="/logo.png" 
-              alt="Jommu Safaris" 
+              alt="Jommu Rentals" 
               className="h-16 w-auto object-contain"
               referrerPolicy="no-referrer"
               onError={(e) => {

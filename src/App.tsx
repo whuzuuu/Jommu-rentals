@@ -17,6 +17,7 @@ import Dashboard from "./pages/admin/Dashboard";
 import Cars from "./pages/admin/Cars";
 import Bookings from "./pages/admin/Bookings";
 import Customers from "./pages/admin/Customers";
+import Profile from "./pages/admin/Profile";
 import ProtectedRoute from "./components/admin/ProtectedRoute";
 
 function ScrollToTop() {
@@ -52,6 +53,7 @@ function AppContent() {
             <Route path="/admin/cars" element={<Cars />} />
             <Route path="/admin/bookings" element={<Bookings />} />
             <Route path="/admin/customers" element={<Customers />} />
+            <Route path="/admin/profile" element={<Profile />} />
           </Route>
         </Routes>
       </main>

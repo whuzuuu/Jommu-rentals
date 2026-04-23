@@ -1,0 +1,172 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: cars
+    // Document ID: carId (auto-generated)
+    // Fields:
+    //   - name: string (required)
+    //   - price: number (required, positive)
+    //   - type: string (required)
+    //   - imageUrl: string (required, URL)
+    //   - transmission: string (enum: Automatic, Manual)
+    //   - fuelType: string (enum: Petrol, Diesel, Electric, Hybrid)
+    //   - seats: number (positive)
+    //   - available: bool
+    //
+    // Collection: customers
+    // Document ID: customerId (auto-generated)
+    // Fields:
+    //   - name: string (required)
+    //   - email: string (required, email)
+    //   - phone: string (required)
+    //
+    // Collection: bookings
+    // Document ID: bookingId (auto-generated)
+    // Fields:
+    //   - customerId: string (required, ref to customers)
+    //   - carId: string (required, ref to cars)
+    //   - pickupDate: timestamp (required)
+    //   - returnDate: timestamp (required)
+    //   - totalPrice: number (required, positive)
+    //   - status: string (enum: pending, approved, cancelled, completed)
+    //   - paymentStatus: string (enum: unpaid, paid)
+    //
+    // Collection: users
+    // Document ID: userId (matches auth.uid)
+    // Fields:
+    //   - email: string (required, email)
+    //   - role: string (enum: admin, client)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "brandonjosh962@gmail.com"));
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidUrl(url) {
+      return url is string && (url.matches("^https://.*") || url.matches("^http://.*"));
+    }
+
+    function isPositive(val) {
+      return val is number && val > 0;
+    }
+
+    function hasOnlyAllowedFields(fields) {
+      return request.resource.data.keys().hasOnly(fields);
+    }
+
+    function hasRequiredFields(fields) {
+      return request.resource.data.keys().hasAll(fields);
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidCar(data) {
+      return hasRequiredFields(['name', 'price', 'type', 'imageUrl']) &&
+             hasOnlyAllowedFields(['name', 'price', 'type', 'imageUrl', 'transmission', 'fuelType', 'seats', 'available', 'description', 'features', 'createdAt', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isPositive(data.price) &&
+             data.type is string && data.type.size() > 0 && data.type.size() < 50 &&
+             isValidUrl(data.imageUrl) &&
+             (!('transmission' in data) || data.transmission in ['Automatic', 'Manual']) &&
+             (!('fuelType' in data) || data.fuelType in ['Petrol', 'Diesel', 'Electric', 'Hybrid']) &&
+             (!('seats' in data) || (data.seats is number && data.seats > 0 && data.seats < 100)) &&
+             (!('description' in data) || (data.description is string && data.description.size() < 2000)) &&
+             (!('features' in data) || (data.features is list));
+    }
+
+    function isValidCustomer(data) {
+      return hasRequiredFields(['name', 'email', 'phone']) &&
+             hasOnlyAllowedFields(['name', 'email', 'phone', 'createdAt', 'updatedAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
+             isValidEmail(data.email) &&
+             data.phone is string && data.phone.size() > 0 && data.phone.size() < 20;
+    }
+
+    function isValidBooking(data) {
+      return hasRequiredFields(['customerId', 'carId', 'pickupDate', 'returnDate', 'totalPrice']) &&
+             hasOnlyAllowedFields(['customerId', 'carId', 'carName', 'pickupDate', 'returnDate', 'totalPrice', 'status', 'paymentStatus', 'paymentMethod', 'mpesaPhone', 'notes', 'createdAt', 'updatedAt']) &&
+             data.customerId is string &&
+             data.carId is string &&
+             (!('carName' in data) || data.carName is string) &&
+             data.pickupDate is timestamp &&
+             data.returnDate is timestamp &&
+             data.returnDate > data.pickupDate &&
+             isPositive(data.totalPrice) &&
+             (!('status' in data) || data.status in ['pending', 'approved', 'cancelled', 'completed']) &&
+             (!('paymentStatus' in data) || data.paymentStatus in ['unpaid', 'paid']) &&
+             (!('paymentMethod' in data) || data.paymentMethod in ['mpesa', 'card']) &&
+             (!('mpesaPhone' in data) || data.mpesaPhone is string) &&
+             (!('notes' in data) || data.notes is string);
+    }
+
+    function isValidUser(data) {
+      return hasRequiredFields(['email', 'role']) &&
+             hasOnlyAllowedFields(['email', 'role', 'createdAt', 'updatedAt']) &&
+             isValidEmail(data.email) &&
+             data.role in ['admin', 'client'];
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /cars/{carId} {
+      allow read: if true; // Publicly viewable
+      allow create: if isAdmin() && isValidCar(request.resource.data);
+      allow update: if isAdmin() && isValidCar(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /customers/{customerId} {
+      allow read: if isAdmin();
+      allow create: if true; // Anyone can submit their info for booking
+      allow update: if isAdmin() && isValidCustomer(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /bookings/{bookingId} {
+      allow read: if isAdmin();
+      allow create: if isValidBooking(request.resource.data);
+      allow update: if isAdmin() && isValidBooking(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isAuthenticated() && isOwner(userId) && isValidUser(request.resource.data) && request.resource.data.role == 'client';
+      allow update: if isAdmin() && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

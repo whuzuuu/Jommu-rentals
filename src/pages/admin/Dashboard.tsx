@@ -17,6 +17,7 @@ import StatCard from "@/src/components/admin/StatCard";
 import Chart from "@/src/components/admin/Chart";
 import { Link } from "react-router-dom";
 import { motion } from "motion/react";
+import { getAdminStats } from "@/src/services/firebaseService";
 
 const Dashboard = () => {
   const [stats, setStats] = useState<any>(null);
@@ -25,17 +26,11 @@ const Dashboard = () => {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const token = localStorage.getItem("adminToken");
-        const response = await fetch("/api/admin/stats", {
-          headers: { "Authorization": `Bearer ${token}` }
+        const data = await getAdminStats();
+        setStats({
+          ...data,
+          ...data.trends
         });
-        const data = await response.json();
-        if (response.ok) {
-          setStats({
-            ...data,
-            ...data.trends
-          });
-        }
       } catch (error) {
         console.error("Failed to fetch stats:", error);
       } finally {
@@ -95,7 +90,7 @@ const Dashboard = () => {
             />
             <StatCard 
               title="Total Revenue" 
-              value={`$${(stats?.totalRevenue || 0).toLocaleString()}`} 
+              value={`KSh ${(stats?.totalRevenue || 0).toLocaleString()}`} 
               icon={DollarSign} 
               trend={stats?.revenueTrend || "+0%"}
               color="green"
