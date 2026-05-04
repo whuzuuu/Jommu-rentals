@@ -14,7 +14,8 @@
         "seats": { "type": "integer", "description": "Number of seats" },
         "available": { "type": "boolean", "description": "Whether the car is currently available" },
         "description": { "type": "string", "description": "A detailed description of the car" },
-        "features": { "type": "array", "items": { "type": "string" }, "description": "A list of features for the car" }
+        "features": { "type": "array", "items": { "type": "string" }, "description": "A list of features for the car" },
+        "gallery": { "type": "array", "items": { "type": "string", "format": "uri" }, "description": "Additional images of the car" }
       },
       "required": ["name", "price", "type", "imageUrl"]
     },

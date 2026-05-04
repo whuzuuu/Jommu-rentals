@@ -1,6 +1,6 @@
 import { useState, useEffect, FormEvent } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { Users, Gauge, Fuel, CheckCircle2, ArrowLeft, Calendar, Phone, User } from "lucide-react";
+import { Users, Gauge, Fuel, CheckCircle2, ArrowLeft, Calendar, Phone, User, Loader2 } from "lucide-react";
 import { Car } from "@/src/types";
 import { getCarById } from "@/src/services/firebaseService";
 
@@ -32,6 +32,8 @@ export default function CarDetails() {
       .catch(() => setLoading(false));
   }, [id]);
 
+  const allImages = car ? [car.imageUrl, ...(car.gallery || [])] : [];
+
   const handleBooking = (e: FormEvent) => {
     e.preventDefault();
     navigate(`/booking?carId=${car?.id}&name=${bookingForm.fullName}&phone=${bookingForm.phone}&pickup=${bookingForm.pickupDate}&return=${bookingForm.returnDate}`);
@@ -54,21 +56,26 @@ export default function CarDetails() {
           <div className="lg:col-span-2 space-y-12">
             {/* Gallery */}
             <div className="space-y-4">
-              <div className="aspect-video rounded-3xl overflow-hidden shadow-lg bg-white">
+              <div className="aspect-video rounded-3xl overflow-hidden shadow-lg bg-white relative">
+                {!activeImage && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-gray-100">
+                    <Loader2 className="w-8 h-8 text-orange-500 animate-spin" />
+                  </div>
+                )}
                 <img
-                  src={activeImage}
+                  src={activeImage || "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=2070"}
                   alt={car.name}
-                  className="w-full h-full object-cover"
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${activeImage ? 'opacity-100' : 'opacity-0'}`}
                   referrerPolicy="no-referrer"
                 />
               </div>
               <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                {car.gallery?.map((img, idx) => (
+                {allImages.length > 1 && allImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(img)}
                     className={`flex-shrink-0 w-32 h-24 rounded-2xl overflow-hidden border-2 transition-all ${
-                      activeImage === img ? "border-orange-500 scale-95" : "border-transparent opacity-70 hover:opacity-100"
+                      activeImage === img ? "border-orange-500 scale-95 shadow-md" : "border-transparent opacity-70 hover:opacity-100 hover:scale-105"
                     }`}
                   >
                     <img src={img} alt="" className="w-full h-full object-cover" referrerPolicy="no-referrer" />
@@ -103,7 +110,7 @@ export default function CarDetails() {
                   <Gauge className="w-6 h-6 text-orange-500" />
                   <div className="text-center">
                     <p className="text-xs text-gray-400 font-bold uppercase">Transmission</p>
-                    <p className="font-bold text-gray-900">{car.transmission || "Auto"}</p>
+                    <p className="font-bold text-gray-900">{car.transmission || "Automatic"}</p>
                   </div>
                 </div>
                 <div className="bg-gray-50 p-6 rounded-2xl flex flex-col items-center gap-3">
@@ -117,7 +124,7 @@ export default function CarDetails() {
                   <CheckCircle2 className="w-6 h-6 text-orange-500" />
                   <div className="text-center">
                     <p className="text-xs text-gray-400 font-bold uppercase">Status</p>
-                    <p className="font-bold text-green-600">Available</p>
+                    <p className="font-bold text-green-600 uppercase tracking-wider text-xs">Available</p>
                   </div>
                 </div>
               </div>

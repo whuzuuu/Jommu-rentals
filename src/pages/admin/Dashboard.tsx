@@ -80,6 +80,7 @@ const Dashboard = () => {
               icon={Car} 
               trend={stats?.carTrend || "+0%"}
               color="blue"
+              link="/admin/cars"
             />
             <StatCard 
               title="Total Bookings" 
@@ -87,6 +88,7 @@ const Dashboard = () => {
               icon={CalendarCheck} 
               trend={stats?.bookingTrend || "+0%"}
               color="orange"
+              link="/admin/bookings"
             />
             <StatCard 
               title="Total Revenue" 
@@ -101,6 +103,7 @@ const Dashboard = () => {
               icon={Users} 
               trend={stats?.customerTrend || "+0%"}
               color="purple"
+              link="/admin/customers"
             />
           </div>
 

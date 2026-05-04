@@ -192,6 +192,53 @@ export const subscribeToCustomers = (callback: (customers: any[]) => void) => {
   });
 };
 
+// Profiles
+export const createAdminProfile = async (profileData: any) => {
+  const path = 'admin_profiles';
+  try {
+    const docRef = await addDoc(collection(db, path), {
+      ...profileData,
+      createdAt: Timestamp.now(),
+      updatedAt: Timestamp.now(),
+    });
+    return docRef.id;
+  } catch (error) {
+    handleFirestoreError(error, OperationType.CREATE, path);
+  }
+};
+
+export const updateAdminProfile = async (id: string, profileData: any) => {
+  const path = `admin_profiles/${id}`;
+  try {
+    const docRef = doc(db, 'admin_profiles', id);
+    await updateDoc(docRef, {
+      ...profileData,
+      updatedAt: Timestamp.now(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
+  }
+};
+
+export const subscribeToAdminProfiles = (callback: (profiles: any[]) => void) => {
+  const path = 'admin_profiles';
+  const q = query(collection(db, path), orderBy('createdAt', 'asc'));
+  return onSnapshot(q, (snapshot) => {
+    callback(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+  }, (error) => {
+    handleFirestoreError(error, OperationType.LIST, path);
+  });
+};
+
+export const deleteAdminProfile = async (id: string) => {
+  const path = `admin_profiles/${id}`;
+  try {
+    await deleteDoc(doc(db, 'admin_profiles', id));
+  } catch (error) {
+    handleFirestoreError(error, OperationType.DELETE, path);
+  }
+};
+
 // Admin Stats (Computed client-side for now)
 export const getAdminStats = async () => {
   try {

@@ -63,7 +63,7 @@ export default function Booking() {
         }) || "";
       }
 
-      // 2. Create booking
+      // 2. Create booking record first
       const bookingData = {
         customerId,
         carId: car?.id || "",
@@ -78,13 +78,52 @@ export default function Booking() {
         notes: formData.notes
       };
 
-      await createBooking(bookingData);
-      setSuccess(true);
-      setTimeout(() => navigate("/"), 5000);
-    } catch (error) {
+      const bookingId = await createBooking(bookingData);
+      
+      if (!bookingId) throw new Error("Failed to create booking");
+
+      // 3. If M-Pesa, trigger STK Push
+      if (formData.paymentMethod === "mpesa") {
+        const response = await fetch("/api/mpesa/stkpush", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            phoneNumber: formData.paymentDetails.mpesaPhone,
+            amount: car?.price || 0,
+            bookingId: bookingId
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json();
+          throw new Error(errData.error || "M-Pesa push failed");
+        }
+
+        // 4. Listen for real-time status update from backend callback
+        const { onSnapshot, doc } = await import("firebase/firestore");
+        const { db } = await import("@/src/firebase");
+        
+        onSnapshot(doc(db, "bookings", bookingId), (docSnap) => {
+          const data = docSnap.data();
+          if (data?.paymentStatus === "paid") {
+            setSuccess(true);
+            setSubmitting(false);
+            setTimeout(() => navigate("/"), 5000);
+          } else if (data?.paymentStatus === "failed") {
+            setSubmitting(false);
+            alert(`Payment failed: ${data.paymentError || "Transaction cancelled"}`);
+          }
+        });
+      } else {
+        // Card or other methods (mocked for now, but following the same flow)
+        setSuccess(true);
+        setSubmitting(false);
+        setTimeout(() => navigate("/"), 5000);
+      }
+
+    } catch (error: any) {
       console.error("Booking failed:", error);
-      alert("An error occurred. Please try again.");
-    } finally {
+      alert(error.message || "An error occurred. Please try again.");
       setSubmitting(false);
     }
   };

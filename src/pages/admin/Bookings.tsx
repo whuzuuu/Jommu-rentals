@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { 
   Search, 
   Filter, 
@@ -100,7 +101,12 @@ const Bookings = () => {
             
             <div className="flex gap-2">
               <button className="px-5 py-2.5 bg-gray-50 text-gray-600 font-bold rounded-xl hover:bg-gray-100 transition-all text-sm">Export CSV</button>
-              <button className="px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-all text-sm shadow-lg shadow-orange-500/20">New Booking</button>
+              <Link 
+                to="/fleet" 
+                className="px-5 py-2.5 bg-orange-500 text-white font-bold rounded-xl hover:bg-orange-600 transition-all text-sm shadow-lg shadow-orange-500/20"
+              >
+                New Booking
+              </Link>
             </div>
           </div>
 

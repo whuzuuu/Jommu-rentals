@@ -35,18 +35,7 @@ export default function Navbar() {
         <div className="flex justify-between items-center">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2">
-            <img 
-              src="/logo.png" 
-              alt="Jommu Rentals" 
-              className="h-12 w-auto object-contain"
-              referrerPolicy="no-referrer"
-              onError={(e) => {
-                // Fallback if logo is not found
-                e.currentTarget.style.display = 'none';
-                e.currentTarget.parentElement?.querySelector('.logo-fallback')?.classList.remove('hidden');
-              }}
-            />
-            <div className="logo-fallback hidden flex items-center gap-2">
+            <div className="flex items-center gap-2">
               <div className="bg-orange-500 p-2 rounded-lg">
                 <Car className="text-white w-6 h-6" />
               </div>

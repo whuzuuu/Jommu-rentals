@@ -52,10 +52,14 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isVerifiedAccount() {
+      return isAuthenticated() && request.auth.token.email_verified == true;
+    }
+
     function isAdmin() {
       return isAuthenticated() &&
-        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-          (request.auth.token.email == "brandonjosh962@gmail.com"));
+        (request.auth.token.email == "brandonjosh962@gmail.com" ||
+         (exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'));
     }
 
     function isOwner(userId) {
@@ -88,7 +92,7 @@ service cloud.firestore {
 
     function isValidCar(data) {
       return hasRequiredFields(['name', 'price', 'type', 'imageUrl']) &&
-             hasOnlyAllowedFields(['name', 'price', 'type', 'imageUrl', 'transmission', 'fuelType', 'seats', 'available', 'description', 'features', 'createdAt', 'updatedAt']) &&
+             hasOnlyAllowedFields(['name', 'price', 'type', 'imageUrl', 'transmission', 'fuelType', 'seats', 'available', 'description', 'features', 'gallery', 'createdAt', 'updatedAt']) &&
              data.name is string && data.name.size() > 0 && data.name.size() < 100 &&
              isPositive(data.price) &&
              data.type is string && data.type.size() > 0 && data.type.size() < 50 &&
@@ -97,7 +101,8 @@ service cloud.firestore {
              (!('fuelType' in data) || data.fuelType in ['Petrol', 'Diesel', 'Electric', 'Hybrid']) &&
              (!('seats' in data) || (data.seats is number && data.seats > 0 && data.seats < 100)) &&
              (!('description' in data) || (data.description is string && data.description.size() < 2000)) &&
-             (!('features' in data) || (data.features is list));
+             (!('features' in data) || (data.features is list)) &&
+             (!('gallery' in data) || (data.gallery is list));
     }
 
     function isValidCustomer(data) {
@@ -145,7 +150,7 @@ service cloud.firestore {
 
     match /customers/{customerId} {
       allow read: if isAdmin();
-      allow create: if true; // Anyone can submit their info for booking
+      allow create: if true; // Anyone can submit their info for booking (may be unverified)
       allow update: if isAdmin() && isValidCustomer(request.resource.data);
       allow delete: if isAdmin();
     }
@@ -155,6 +160,10 @@ service cloud.firestore {
       allow create: if isValidBooking(request.resource.data);
       allow update: if isAdmin() && isValidBooking(request.resource.data);
       allow delete: if isAdmin();
+    }
+
+    match /admin_profiles/{profileId} {
+      allow read, write: if isAdmin();
     }
 
     match /users/{userId} {

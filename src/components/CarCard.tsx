@@ -20,9 +20,9 @@ const CarCard: React.FC<CarCardProps> = ({ car, isAdmin, onEdit, onDelete }) => 
       className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 group border border-gray-100"
     >
       {/* Image Container */}
-      <div className="relative h-64 overflow-hidden">
+      <div className="relative h-64 overflow-hidden bg-gray-100">
         <img
-          src={car.imageUrl}
+          src={car.imageUrl || "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=2070"}
           alt={car.name}
           className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
           referrerPolicy="no-referrer"

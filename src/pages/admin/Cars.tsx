@@ -35,7 +35,11 @@ const Cars = () => {
     price: "",
     imageUrl: "",
     description: "",
-    features: ""
+    features: "",
+    transmission: "Automatic",
+    fuelType: "Petrol",
+    seats: 5,
+    gallery: [] as string[]
   });
 
   const handleDeleteCar = async (id: string) => {
@@ -68,35 +72,56 @@ const Cars = () => {
 
   const handleEditCar = async (e: any) => {
     e.preventDefault();
+    setIsUploading(true);
     try {
       const { id, ...data } = editingCar;
       await updateCar(id, {
         ...data,
         price: Number(data.price),
+        seats: Number(data.seats),
         features: typeof data.features === 'string' ? data.features.split(",").map((f: string) => f.trim()) : data.features
       });
       setEditingCar(null);
     } catch (error) {
       console.error("Failed to update car:", error);
+      alert("Failed to update car. Check console for details.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleAddCar = async (e: any) => {
     e.preventDefault();
+    setIsUploading(true);
     try {
       await createCar({
         ...newCar,
         price: Number(newCar.price),
+        seats: Number(newCar.seats),
         features: newCar.features.split(",").map(f => f.trim())
       });
       setIsModalOpen(false);
-      setNewCar({ name: "", type: "SUV", price: "", imageUrl: "", description: "", features: "" });
+      setNewCar({ 
+        name: "", 
+        type: "SUV", 
+        price: "", 
+        imageUrl: "", 
+        description: "", 
+        features: "",
+        transmission: "Automatic",
+        fuelType: "Petrol",
+        seats: 5,
+        gallery: []
+      });
     } catch (error) {
       console.error("Failed to add car:", error);
+      alert("Failed to add car. Check console for details.");
+    } finally {
+      setIsUploading(false);
     }
   };
 
-  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, isEditing: boolean) => {
+  const handleImageUpload = async (e: ChangeEvent<HTMLInputElement>, isEditing: boolean, isGallery: boolean = false) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -104,9 +129,17 @@ const Cars = () => {
     try {
       const url = await uploadFile(file);
       if (isEditing) {
-        setEditingCar({ ...editingCar, imageUrl: url });
+        if (isGallery) {
+          setEditingCar({ ...editingCar, gallery: [...(editingCar.gallery || []), url] });
+        } else {
+          setEditingCar({ ...editingCar, imageUrl: url });
+        }
       } else {
-        setNewCar({ ...newCar, imageUrl: url });
+        if (isGallery) {
+          setNewCar({ ...newCar, gallery: [...(newCar.gallery || []), url] });
+        } else {
+          setNewCar({ ...newCar, imageUrl: url });
+        }
       }
     } catch (error) {
       console.error("Upload failed:", error);
@@ -203,8 +236,13 @@ const Cars = () => {
                         <tr key={car.id} className="hover:bg-gray-50/50 transition-colors group">
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-4">
-                              <div className="w-16 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-100 flex-shrink-0">
-                                <img src={car.imageUrl} alt={car.name} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                              <div className="w-16 h-12 rounded-xl overflow-hidden shadow-sm border border-gray-100 flex-shrink-0 bg-gray-50">
+                                <img 
+                                  src={car.imageUrl || "https://images.unsplash.com/photo-1533473359331-0135ef1b58bf?auto=format&fit=crop&q=80&w=2070"} 
+                                  alt={car.name} 
+                                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" 
+                                  referrerPolicy="no-referrer"
+                                />
                               </div>
                               <div>
                                 <p className="font-bold text-gray-900">{car.name}</p>
@@ -290,7 +328,7 @@ const Cars = () => {
                 </button>
               </div>
               
-              <form onSubmit={handleEditCar} className="p-8 space-y-6">
+              <form onSubmit={handleEditCar} className="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Car Name</label>
@@ -326,7 +364,41 @@ const Cars = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vehicle Image</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Seats</label>
+                    <input 
+                      type="number" 
+                      required
+                      value={editingCar.seats || 5}
+                      onChange={(e) => setEditingCar({ ...editingCar, seats: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Transmission</label>
+                    <select 
+                      value={editingCar.transmission || "Automatic"}
+                      onChange={(e) => setEditingCar({ ...editingCar, transmission: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    >
+                      <option value="Automatic">Automatic</option>
+                      <option value="Manual">Manual</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Fuel Type</label>
+                    <select 
+                      value={editingCar.fuelType || "Petrol"}
+                      onChange={(e) => setEditingCar({ ...editingCar, fuelType: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    >
+                      <option value="Petrol">Petrol</option>
+                      <option value="Diesel">Diesel</option>
+                      <option value="Electric">Electric</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Master Image</label>
                     <div className="flex gap-4 items-start">
                       <div className="w-24 h-24 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group">
                         {editingCar.imageUrl ? (
@@ -342,7 +414,7 @@ const Cars = () => {
                         <input 
                           type="file" 
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, true)}
+                          onChange={(e) => handleImageUpload(e, true, false)}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                           disabled={isUploading}
                         />
@@ -356,13 +428,40 @@ const Cars = () => {
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Or Paste URL</label>
                         <input 
                           type="url" 
-                          required
                           value={editingCar.imageUrl}
                           onChange={(e) => setEditingCar({ ...editingCar, imageUrl: e.target.value })}
                           className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium text-sm"
                           placeholder="https://..."
                         />
                       </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gallery</label>
+                    <div className="flex gap-2 flex-wrap min-h-[6rem] p-2 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                      {editingCar.gallery?.map((img: string, idx: number) => (
+                        <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden group">
+                          <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <button 
+                            type="button"
+                            onClick={() => setEditingCar({ ...editingCar, gallery: editingCar.gallery.filter((_: any, i: number) => i !== idx) })}
+                            className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className="w-16 h-16 rounded-xl bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-all">
+                        <Plus className="w-6 h-6 text-gray-400" />
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleImageUpload(e, true, true)}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -397,9 +496,10 @@ const Cars = () => {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20"
+                    disabled={isUploading}
+                    className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Update Vehicle
+                    {isUploading ? "Updating..." : "Update Vehicle"}
                   </button>
                 </div>
               </form>
@@ -422,7 +522,7 @@ const Cars = () => {
                 </button>
               </div>
               
-              <form onSubmit={handleAddCar} className="p-8 space-y-6">
+              <form onSubmit={handleAddCar} className="p-8 space-y-6 overflow-y-auto max-h-[70vh]">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Car Name</label>
@@ -460,7 +560,41 @@ const Cars = () => {
                     />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Vehicle Image</label>
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Seats</label>
+                    <input 
+                      type="number" 
+                      required
+                      value={newCar.seats}
+                      onChange={(e) => setNewCar({ ...newCar, seats: parseInt(e.target.value) })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Transmission</label>
+                    <select 
+                      value={newCar.transmission}
+                      onChange={(e) => setNewCar({ ...newCar, transmission: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    >
+                      <option value="Automatic">Automatic</option>
+                      <option value="Manual">Manual</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Fuel Type</label>
+                    <select 
+                      value={newCar.fuelType}
+                      onChange={(e) => setNewCar({ ...newCar, fuelType: e.target.value })}
+                      className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
+                    >
+                      <option value="Petrol">Petrol</option>
+                      <option value="Diesel">Diesel</option>
+                      <option value="Electric">Electric</option>
+                      <option value="Hybrid">Hybrid</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Master Image</label>
                     <div className="flex gap-4 items-start">
                       <div className="w-24 h-24 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden relative group">
                         {newCar.imageUrl ? (
@@ -476,7 +610,7 @@ const Cars = () => {
                         <input 
                           type="file" 
                           accept="image/*"
-                          onChange={(e) => handleImageUpload(e, false)}
+                          onChange={(e) => handleImageUpload(e, false, false)}
                           className="absolute inset-0 opacity-0 cursor-pointer"
                           disabled={isUploading}
                         />
@@ -490,13 +624,40 @@ const Cars = () => {
                         <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Or Paste URL</label>
                         <input 
                           type="url" 
-                          required
                           value={newCar.imageUrl}
                           onChange={(e) => setNewCar({ ...newCar, imageUrl: e.target.value })}
                           className="w-full px-4 py-3 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 transition-all font-medium text-sm"
                           placeholder="https://..."
                         />
                       </div>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest">Gallery</label>
+                    <div className="flex gap-2 flex-wrap min-h-[6rem] p-2 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200">
+                      {newCar.gallery?.map((img: string, idx: number) => (
+                        <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden group">
+                          <img src={img} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+                          <button 
+                            type="button"
+                            onClick={() => setNewCar({ ...newCar, gallery: newCar.gallery.filter((_, i) => i !== idx) })}
+                            className="absolute inset-0 bg-red-500/80 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      ))}
+                      <label className="w-16 h-16 rounded-xl bg-white border border-gray-200 flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-all">
+                        <Plus className="w-6 h-6 text-gray-400" />
+                        <input 
+                          type="file" 
+                          accept="image/*"
+                          multiple
+                          onChange={(e) => handleImageUpload(e, false, true)}
+                          className="hidden"
+                          disabled={isUploading}
+                        />
+                      </label>
                     </div>
                   </div>
                 </div>
@@ -533,9 +694,10 @@ const Cars = () => {
                   </button>
                   <button 
                     type="submit"
-                    className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20"
+                    disabled={isUploading}
+                    className="flex-1 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-orange-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    Save Vehicle
+                    {isUploading ? "Uploading..." : "Save Vehicle"}
                   </button>
                 </div>
               </form>

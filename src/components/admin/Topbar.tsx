@@ -4,15 +4,31 @@ import {
   User, 
   LogOut,
   Settings,
-  HelpCircle
+  HelpCircle,
+  Loader2
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@/src/lib/utils";
+import { subscribeToAdminProfiles } from "@/src/services/firebaseService";
 
 const Topbar = ({ title }: { title: string }) => {
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [adminProfile, setAdminProfile] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const unsubscribe = subscribeToAdminProfiles((profiles) => {
+      // For now, we'll take the first profile as the active one
+      // In a real app, this would be matched to the current auth ID
+      if (profiles && profiles.length > 0) {
+        setAdminProfile(profiles[0]);
+      }
+      setIsLoading(false);
+    });
+    return () => unsubscribe();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("isAdminAuthenticated");
@@ -48,19 +64,19 @@ const Topbar = ({ title }: { title: string }) => {
             className="flex items-center gap-3 p-1.5 pr-4 rounded-2xl hover:bg-gray-100 transition-all group"
           >
             <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 font-bold group-hover:scale-105 transition-transform">
-              AD
+              {adminProfile?.name?.[0] || "A"}
             </div>
             <div className="text-left hidden lg:block">
-              <p className="text-sm font-bold text-gray-900">Admin User</p>
-              <p className="text-xs font-medium text-gray-500">Super Admin</p>
+              <p className="text-sm font-bold text-gray-900">{adminProfile?.name || "Admin User"}</p>
+              <p className="text-xs font-medium text-gray-500">{adminProfile?.role || "Super Admin"}</p>
             </div>
           </button>
 
           {isProfileOpen && (
             <div className="absolute right-0 mt-3 w-56 bg-white rounded-3xl shadow-2xl border border-gray-100 p-2 animate-in fade-in slide-in-from-top-2 duration-200">
               <div className="px-4 py-3 border-b border-gray-50 mb-2">
-                <p className="text-sm font-bold text-gray-900">Admin User</p>
-                <p className="text-xs font-medium text-gray-500">admin@jommurentals.com</p>
+                <p className="text-sm font-bold text-gray-900">{adminProfile?.name || "Admin User"}</p>
+                <p className="text-xs font-medium text-gray-500">{adminProfile?.email || "admin@jommurentals.com"}</p>
               </div>
               <button 
                 onClick={() => {

@@ -66,8 +66,8 @@ export default function Home() {
         {/* Background Image */}
         <div className="absolute inset-0 z-0">
           <img
-            src="https://lookaside.fbsbx.com/lookaside/crawler/media/?media_id=1081007964226557"
-            alt="Lion in Nairobi National Park"
+            src="https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?auto=format&fit=crop&q=80&w=2071"
+            alt="Lion resting on a platform with the Nairobi city skyline and Britam Tower in the background"
             className="w-full h-full object-cover"
             referrerPolicy="no-referrer"
           />

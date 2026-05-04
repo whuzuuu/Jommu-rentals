@@ -2,61 +2,88 @@ import React, { useState, useEffect } from "react";
 import { 
   User, 
   Mail, 
-  Lock, 
   Shield, 
   Camera,
   Save,
-  CheckCircle2
+  CheckCircle2,
+  Plus,
+  Trash2,
+  Edit2
 } from "lucide-react";
 import Sidebar from "@/src/components/admin/Sidebar";
 import Topbar from "@/src/components/admin/Topbar";
 import { motion } from "motion/react";
-import { auth } from "@/src/firebase";
-import { updateProfile, updateEmail } from "firebase/auth";
+import { 
+  subscribeToAdminProfiles, 
+  createAdminProfile, 
+  updateAdminProfile, 
+  deleteAdminProfile 
+} from "@/src/services/firebaseService";
 
 const Profile = () => {
-  const [isSaving, setIsSaving] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
-  const [error, setError] = useState("");
-  const [profile, setProfile] = useState({
-    name: auth.currentUser?.displayName || "Admin User",
-    email: auth.currentUser?.email || "admin@jommurentals.com",
-    role: "Super Admin",
-    phone: "+254 700 000 000",
-    bio: "Managing the premium car rental fleet in Nairobi."
+  const [profiles, setProfiles] = useState<any[]>([]);
+  const [isSaving, setIsSaving] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "Admin",
+    phone: "",
+    bio: ""
   });
 
   useEffect(() => {
-    if (auth.currentUser) {
-      setProfile(prev => ({
-        ...prev,
-        name: auth.currentUser?.displayName || prev.name,
-        email: auth.currentUser?.email || prev.email
-      }));
-    }
+    const unsubscribe = subscribeToAdminProfiles((data) => {
+      setProfiles(data);
+    });
+    return () => unsubscribe();
   }, []);
+
+  const handleEdit = (profile: any) => {
+    setEditingId(profile.id);
+    setFormData({
+      name: profile.name || "",
+      email: profile.email || "",
+      role: profile.role || "Admin",
+      phone: profile.phone || "",
+      bio: profile.bio || ""
+    });
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    setError("");
+    setIsSaving(editingId || "new");
     
     try {
-      if (auth.currentUser) {
-        if (profile.name !== auth.currentUser.displayName) {
-          await updateProfile(auth.currentUser, { displayName: profile.name });
+      if (editingId) {
+        await updateAdminProfile(editingId, formData);
+        setEditingId(null);
+      } else {
+        if (profiles.length >= 3) {
+          alert("Maximum 3 profiles allowed");
+          return;
         }
-        if (profile.email !== auth.currentUser.email) {
-          await updateEmail(auth.currentUser, profile.email);
-        }
-        setShowSuccess(true);
-        setTimeout(() => setShowSuccess(false), 3000);
+        await createAdminProfile(formData);
       }
+      setShowSuccess(editingId || "new");
+      setTimeout(() => setShowSuccess(null), 3000);
+      setFormData({ name: "", email: "", role: "Admin", phone: "", bio: "" });
     } catch (err: any) {
-      console.error("Failed to update profile:", err);
-      setError(err.message || "Failed to update profile.");
+      console.error("Failed to save profile:", err);
+      alert(err.message || "Failed to save profile.");
     } finally {
-      setIsSaving(false);
+      setIsSaving(null);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (window.confirm("Are you sure you want to delete this profile?")) {
+      try {
+        await deleteAdminProfile(id);
+      } catch (err: any) {
+        console.error("Failed to delete profile:", err);
+      }
     }
   };
 
@@ -64,44 +91,115 @@ const Profile = () => {
     <div className="min-h-screen bg-gray-50 flex">
       <Sidebar />
       <div className="flex-1 ml-64">
-        <Topbar title="Admin Profile" />
+        <Topbar title="Admin Profiles Management" />
         
-        <main className="p-8 pt-28 space-y-8 max-w-4xl mx-auto">
-          <div className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden">
-            {/* Profile Header */}
-            <div className="h-48 bg-gradient-to-r from-orange-500 to-orange-600 relative">
-              <div className="absolute -bottom-16 left-12 flex items-end gap-6">
-                <div className="relative group">
-                  <div className="w-32 h-32 rounded-3xl bg-white p-1 shadow-xl">
-                    <div className="w-full h-full rounded-2xl bg-orange-100 flex items-center justify-center text-orange-600 text-4xl font-bold">
-                      AD
-                    </div>
-                  </div>
-                  <button className="absolute bottom-2 right-2 p-2 bg-gray-900 text-white rounded-xl shadow-lg hover:scale-110 transition-transform">
-                    <Camera className="w-4 h-4" />
-                  </button>
-                </div>
-                <div className="pb-4">
-                  <h2 className="text-3xl font-bold text-white mb-1">{profile.name}</h2>
-                  <p className="text-orange-100 font-medium flex items-center gap-2">
-                    <Shield className="w-4 h-4" />
-                    {profile.role}
-                  </p>
-                </div>
-              </div>
+        <main className="p-8 pt-28 space-y-8 max-w-6xl mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-900">Admin Profiles</h2>
+              <p className="text-gray-500 mt-1">Manage up to 3 administrative accounts</p>
             </div>
+            {profiles.length < 3 && !editingId && (
+              <button 
+                onClick={() => setEditingId("new")}
+                className="flex items-center gap-2 px-6 py-3 bg-orange-500 text-white font-bold rounded-2xl hover:bg-orange-600 transition-all shadow-xl shadow-orange-500/20"
+              >
+                <Plus className="w-5 h-5" />
+                Add Profile
+              </button>
+            )}
+          </div>
 
-            <div className="pt-24 p-12">
-              {showSuccess && (
-                <motion.div 
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-8 p-4 bg-green-50 border border-green-100 rounded-2xl flex items-center gap-3 text-green-600 font-bold"
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* Profile Slots */}
+            {[0, 1, 2].map((index) => {
+              const profile = profiles[index];
+              const isEditing = editingId === (profile?.id || (editingId === "new" && profiles.length === index ? "new" : null));
+
+              if (profile) {
+                return (
+                  <motion.div 
+                    key={profile.id}
+                    layout
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="bg-white rounded-[40px] shadow-sm border border-gray-100 overflow-hidden group"
+                  >
+                    <div className="h-32 bg-gradient-to-r from-orange-500 to-orange-600 relative">
+                      <div className="absolute -bottom-10 left-8 flex items-end gap-4">
+                        <div className="w-20 h-20 rounded-2xl bg-white p-1 shadow-lg">
+                          <div className="w-full h-full rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 text-2xl font-bold uppercase">
+                            {profile.name?.[0] || "A"}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="absolute top-4 right-4 flex gap-2 overflow-hidden opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          onClick={() => handleEdit(profile)}
+                          className="p-2 bg-white/20 hover:bg-white/40 text-white backdrop-blur-md rounded-xl transition-all"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDelete(profile.id)}
+                          className="p-2 bg-red-500/80 hover:bg-red-500 text-white backdrop-blur-md rounded-xl transition-all"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                    <div className="pt-12 p-8 space-y-4">
+                      <div>
+                        <h4 className="text-xl font-bold text-gray-900">{profile.name}</h4>
+                        <p className="text-orange-600 text-sm font-bold flex items-center gap-1 mt-1">
+                          <Shield className="w-4 h-4" />
+                          {profile.role}
+                        </p>
+                      </div>
+                      <div className="space-y-2 text-sm text-gray-500 font-medium">
+                        <p className="flex items-center gap-2">
+                          <Mail className="w-4 h-4" />
+                          {profile.email}
+                        </p>
+                        <p className="line-clamp-2 italic">{profile.bio}</p>
+                      </div>
+                    </div>
+                  </motion.div>
+                );
+              }
+
+              return (
+                <div 
+                  key={`empty-${index}`}
+                  className="bg-gray-100/50 border-2 border-dashed border-gray-200 rounded-[40px] h-[320px] flex flex-col items-center justify-center text-gray-400 gap-4"
                 >
-                  <CheckCircle2 className="w-5 h-5" />
-                  Profile updated successfully!
-                </motion.div>
-              )}
+                  <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center">
+                    <User className="w-8 h-8" />
+                  </div>
+                  <p className="font-bold text-sm uppercase tracking-widest">Available Slot</p>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Edit/Create Form Modal-like Section */}
+          {editingId && (
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="mt-12 bg-white rounded-[40px] shadow-sm border border-gray-100 p-12"
+            >
+              <div className="flex justify-between items-center mb-8">
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {editingId === "new" ? "Create New Profile" : "Edit Profile"}
+                </h3>
+                <button 
+                  onClick={() => setEditingId(null)}
+                  className="text-gray-400 hover:text-gray-900 font-bold"
+                >
+                  Cancel
+                </button>
+              </div>
 
               <form onSubmit={handleSave} className="space-y-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -111,8 +209,10 @@ const Profile = () => {
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
                       <input 
                         type="text" 
-                        value={profile.name}
-                        onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                        required
+                        value={formData.name}
+                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                        placeholder="e.g. John Doe"
                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
                       />
                     </div>
@@ -123,11 +223,35 @@ const Profile = () => {
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-orange-500 transition-colors" />
                       <input 
                         type="email" 
-                        value={profile.email}
-                        onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                        required
+                        value={formData.email}
+                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                        placeholder="john@example.com"
                         className="w-full pl-12 pr-4 py-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-orange-500 transition-all font-medium"
                       />
                     </div>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Role</label>
+                    <select 
+                      value={formData.role}
+                      onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                      className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-orange-500 transition-all font-medium cursor-pointer"
+                    >
+                      <option value="Super Admin">Super Admin</option>
+                      <option value="Admin">Admin</option>
+                      <option value="Manager">Manager</option>
+                      <option value="Support">Support</option>
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Success Feedback</label>
+                    {showSuccess && (
+                      <div className="flex items-center gap-2 text-green-600 font-bold p-4 bg-green-50 rounded-2xl">
+                        <CheckCircle2 className="w-5 h-5" />
+                        Saved!
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -135,8 +259,9 @@ const Profile = () => {
                   <label className="text-xs font-bold text-gray-400 uppercase tracking-widest ml-1">Bio</label>
                   <textarea 
                     rows={4}
-                    value={profile.bio}
-                    onChange={(e) => setProfile({ ...profile, bio: e.target.value })}
+                    value={formData.bio}
+                    onChange={(e) => setFormData({ ...formData, bio: e.target.value })}
+                    placeholder="Short description about this admin..."
                     className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-orange-500 transition-all font-medium resize-none"
                   ></textarea>
                 </div>
@@ -144,7 +269,7 @@ const Profile = () => {
                 <div className="pt-4 flex justify-end">
                   <button 
                     type="submit"
-                    disabled={isSaving}
+                    disabled={!!isSaving}
                     className="flex items-center gap-3 px-10 py-4 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl transition-all shadow-xl shadow-orange-500/20 disabled:opacity-70"
                   >
                     {isSaving ? (
@@ -152,32 +277,14 @@ const Profile = () => {
                     ) : (
                       <>
                         <Save className="w-5 h-5" />
-                        Save Changes
+                        {editingId === "new" ? "Create Profile" : "Save Changes"}
                       </>
                     )}
                   </button>
                 </div>
               </form>
-
-              <div className="mt-12 pt-12 border-t border-gray-100">
-                <h3 className="text-xl font-bold text-gray-900 mb-6">Security Settings</h3>
-                <div className="space-y-4">
-                  <button className="flex items-center justify-between w-full p-6 bg-gray-50 hover:bg-gray-100 rounded-3xl transition-all group">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center text-gray-500 group-hover:text-orange-500 transition-colors">
-                        <Lock className="w-6 h-6" />
-                      </div>
-                      <div className="text-left">
-                        <p className="font-bold text-gray-900">Change Password</p>
-                        <p className="text-sm text-gray-500">Update your account password regularly</p>
-                      </div>
-                    </div>
-                    <div className="px-4 py-2 bg-white rounded-xl text-xs font-bold text-gray-900 shadow-sm">Update</div>
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          )}
         </main>
       </div>
     </div>
@@ -185,3 +292,4 @@ const Profile = () => {
 };
 
 export default Profile;
+
